@@ -98,7 +98,7 @@ for i in range(len(weather_number)):
                     bel20[i] += 1
                 amtd[i] += float(day[20]) - float(day[22])
                 amws[i] += 0.514 * float(day[16])
-                atp[i] += 25.4 * float(day[24])
+                atp[i] += (25.4 * float(day[24])) if day[24] != '99.99' else 0
                 if float(day[6]) < 68 and float(day[6]) > 50:
                     mem[i] += 1
                 else:
@@ -106,6 +106,12 @@ for i in range(len(weather_number)):
     amtd[i] = (amtd[i] - 32) / 1.8 / 365 / 5
     amws[i] /= 365 * 5
     mem[i] /= 5
+    esc30[i] /= 5
+    esc35[i] /= 5
+    esc40[i] /= 5
+    bel10[i] /= 5
+    bel20[i] /= 5
+    atp[i] /= 5
             
 res = xlwt.Workbook(encoding = 'utf-8')
 sheet = res.add_sheet('sheet1')

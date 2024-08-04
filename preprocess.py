@@ -4,6 +4,39 @@ import os
 import csv
 import json
 
+def set_style(name,size,color,borders_color, top, color_fore,blod=False):
+    style = xlwt.XFStyle()  # 初始化样式
+    # 字体
+    font = xlwt.Font()
+    font.name = name
+    font.height = 20 * size  # 字号
+    font.bold = blod  # 加粗
+    font.colour_index = color  # 默认：0x7FFF 黑色：0x08
+    style.font = font
+    # 居中
+    alignment = xlwt.Alignment()  # 居中
+    alignment.horz = xlwt.Alignment.HORZ_CENTER
+    alignment.vert = xlwt.Alignment.VERT_CENTER
+    style.alignment=alignment
+    # 边框
+    borders = xlwt.Borders()
+    if top:
+        borders.top = xlwt.Borders.THIN
+        borders.top_colour = borders_color
+    borders.bottom = xlwt.Borders.THIN
+    borders.bottom_colour = borders_color
+    borders.left = xlwt.Borders.THIN
+    # borders.b_colour = borders_color
+    borders.right = xlwt.Borders.THIN
+    # borders.bottom_colour = borders_color
+    style.borders = borders
+    # 背景颜色
+    pattern = xlwt.Pattern()
+    pattern.pattern = xlwt.Pattern.SOLID_PATTERN  # 设置背景颜色的模式(NO_PATTERN; SOLID_PATTERN)
+    pattern.pattern_fore_colour = color_fore  # 默认：无色：0x7FFF；黄色：0x0D；蓝色：0x0C
+    style.pattern = pattern
+    return style
+
 def city_name_equa(a:str, b:str, f = 1):
     flag = 1
     if len(a) > 2:
@@ -112,26 +145,46 @@ for i in range(len(weather_number)):
     bel10[i] /= 5
     bel20[i] /= 5
     atp[i] /= 5
-            
+
+points = []
+data = [name_city, province_name, city_number, weather_number, amtd, esc30, esc35, esc40, bel10, bel20, amws, atp, mem, points]
+# 超30 超35 超40 低10 低20 风速 降水量 舒适天数
+sub_weight = (0.173, 0.354, 0.173, 0.032, 0.035, 0.028, 0.028, 0.173)
+obj_weight = (0.167, 0.067, 0.037, 0.209, 0.081, 0.015, 0.170, 0.249)
+
+for p in data[5:-1]:
+    p.append(max(p))
+    p.append(min(p))
+
+for i in range(len(data[0])):
+    points.append(0)
+    for j in range(7):
+        points[-1] += (0.8 * sub_weight[j] + 0.2 * obj_weight[j]) * ((data[j+5][-1] - data[j+5][i]) / (data[j+5][-2] - data[j+5][-1]) + 1) * 100 // 1
+    points[-1] += (0.8 * sub_weight[7] + 0.2 * obj_weight[7]) * (data[12][i] - data[12][-1]) / (data[12][-2] - data[12][-1]) * 100 // 1
+
+
 res = xlwt.Workbook(encoding = 'utf-8')
 sheet = res.add_sheet('sheet1')
-title = ['城市', '省', '行政区代码', '气象站代码', '超30', '超35', '超40', '低10', '低20', '均温差', '风速', '降水量', '舒适天数']
+sheet.row(0).height_mismatch = True
+sheet.row(0).height = 500
+title = ['城市', '省', '行政区代码', '气象站代码', '均温差', '超30', '超35', '超40', '低10', '低20', '风速', '降水量', '舒适天数', '综合评分']
+
 for i in range(len(title)):
-    sheet.write(0, i, label = title[i])
+    sheet.write(0, i, title[i], set_style('黑体', 11, 0x7FFF, 0x00, 1, 0x7FFF, blod = True))
+    if i < 2:
+        sheet.col(i).width = 6000
+    elif i < 4:
+        sheet.col(i).width = 4000
+    else:
+        sheet.col(i).width = 3000
+style_cont = set_style('宋体', 10, 0x7FFF, 0x16, 0, 0x7FFF, blod = False)
+style_separate = set_style('宋体', 10, 0x7FFF, 0x00, 0, 0x7FFF, blod = False)
 for i in range(len(name_city)):
-    sheet.write(i+1, 0, label = name_city[i])
-    sheet.write(i+1, 1, label = province_name[i])
-    sheet.write(i+1, 2, label = city_number[i])
-    sheet.write(i+1, 3, label = weather_number[i])
-    sheet.write(i+1, 4, label = esc30[i])
-    sheet.write(i+1, 5, label = esc35[i])
-    sheet.write(i+1, 6, label = esc40[i])
-    sheet.write(i+1, 7, label = bel10[i])
-    sheet.write(i+1, 8, label = bel20[i])
-    sheet.write(i+1, 9, label = amtd[i])
-    sheet.write(i+1, 10, label = amws[i])
-    sheet.write(i+1, 11, label = atp[i])
-    sheet.write(i+1, 12, label = mem[i])
+    for row in range(len(data)):
+        sheet.row(i+1).height_mismatch = True
+        sheet.row(i+1).height = 400
+        sheet.write(i+1, row, data[row][i] if type(data[row][i]) != float else int(data[row][i]), style_cont)
 res.save('气象数据.xls')
 # print(name_city)
 # print(esc30)
+
